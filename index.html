@@ -423,6 +423,8 @@ tbody tr:hover td{box-shadow:0 8px 14px -10px rgba(10,30,18,.4)}
   *{box-shadow:none!important;animation:none!important;transform:none!important;backdrop-filter:none!important}
   .idcard{box-shadow:none!important}
 }
+
+.bcbox{background:#fff;border-radius:8px;line-height:0;width:min(100%,260px);padding:4px;box-shadow:0 8px 16px rgba(10,30,18,.25);transform:translateZ(24px);flex:none}.bcbox canvas{width:100%;height:auto;display:block}
 </style>
 </head>
 <body>
@@ -488,7 +490,6 @@ window.PUSTAKA_FIREBASE = {
 };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
@@ -912,16 +913,19 @@ function cardHTML(a){
   return '<div class="idcard" data-tilt="9"><div class="idcard-h"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23" fill="#fff"/><path d="M10 14c5-2 10-1.5 14 1.5 4-3 9-3.5 14-1.5v20c-5-2-10-1.5-14 1.5-4-3-9-3.5-14-1.5V14z" fill="#1E6B3C"/><path d="M24 15.5V36" stroke="#fff" stroke-width="1.6"/></svg>'+
     '<div><small>Kartu Anggota Perpustakaan</small><b>'+esc(s.nama.toUpperCase())+'</b><span>'+esc(s.alamat)+'</span></div></div>'+
     '<dl class="idcard-b"><dt>NISN</dt><dd>: '+esc(a.nisn)+'</dd><dt>Nama</dt><dd>: '+esc(a.nama)+'</dd><dt>Kelas</dt><dd>: '+esc(kelas)+'</dd><dt>Tanggal Lahir</dt><dd>: '+esc(dmy(a.tglLahir)||'–')+'</dd><dt>Tempat Lahir</dt><dd>: '+esc(a.tempatLahir||'–')+'</dd><dt>Jenis Kelamin</dt><dd>: '+esc(a.jk||'–')+'</dd></dl>'+
-    '<div class="idcard-f"><div class="qrbox" id="qr-box" aria-label="Kode QR berisi NISN '+esc(a.nisn)+'"></div><div class="sign"><p>'+esc(s.kota||'')+(s.kota?', ':'')+esc(dmy(today()))+'</p><p>Kepala Perpustakaan</p><b>'+esc(s.kepala||'………………………')+'</b></div></div></div>';
+    '<div class="idcard-f"><div class="bcbox" id="qr-box" aria-label="Barcode berisi NISN '+esc(a.nisn)+'"><canvas id="card-bc"></canvas></div><div class="sign"><p>'+esc(s.kota||'')+(s.kota?', ':'')+esc(dmy(today()))+'</p><p>Kepala Perpustakaan</p><b>'+esc(s.kepala||'………………………')+'</b></div></div></div>';
+}
+function drawCardBarcode(cv,txt){
+  if(!cv)return;
+  if(typeof JsBarcode!=='function'){cv.replaceWith(document.createTextNode(txt));return;}
+  try{JsBarcode(cv,String(txt),{format:'CODE128',width:3,height:90,displayValue:true,fontSize:18,textMargin:6,margin:14,lineColor:'#000000',background:'#ffffff'});}catch(e){cv.replaceWith(document.createTextNode(txt));}
 }
 function openCard(id){
   var a=byId('anggota',id);if(!a)return;
   openModal({title:'Kartu Anggota',wide:true,body:cardHTML(a),
     footer:'<button type="button" class="btn ghost" data-act="close-modal">Tutup</button>'+(CAN_PRINT?'<button type="button" class="btn ghost" data-act="print">'+icon('print')+' Cetak</button>':'')+'<button type="button" class="btn primary" data-act="dl-card" data-id="'+esc(id)+'">'+icon('download')+' Unduh PNG</button>',
     after:function(){
-      var box=$('#qr-box');
-      if(window.QRCode){try{new QRCode(box,{text:String(a.nisn),width:104,height:104,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});}catch(e){box.textContent=a.nisn;}}
-      else box.textContent=a.nisn;
+      drawCardBarcode($('#card-bc'),a.nisn);
     }});
 }
 function downloadCard(id){
@@ -940,9 +944,9 @@ function downloadCard(id){
   x.font='500 20px '+F;x.fillStyle='rgba(255,255,255,.9)';x.fillText(s.alamat,180,140);
   var rows=[['NISN',a.nisn],['Nama',a.nama],['Kelas',nm('kelas',a.kelasId)],['Tanggal Lahir',dmy(a.tglLahir)||'–'],['Tempat Lahir',a.tempatLahir||'–'],['Jenis Kelamin',a.jk||'–']];
   rows.forEach(function(r,i){var y=222+i*40;x.font='500 25px '+F;x.fillStyle='#3D5043';x.fillText(r[0],60,y);x.fillText(':',290,y);x.font='700 25px '+F;x.fillStyle='#1B2A1F';x.fillText(String(r[1]),312,y);});
-  x.fillStyle='#fff';x.fillRect(60,456,176,176);
-  var qc=box&&(box.querySelector('canvas')||box.querySelector('img'));
-  if(qc){try{x.drawImage(qc,70,466,156,156);}catch(e){}}
+  x.fillStyle='#fff';x.fillRect(60,456,500,176);
+  var qc=document.createElement('canvas');drawCardBarcode(qc,a.nisn);
+  if(qc.width){try{var sc=Math.min(480/qc.width,156/qc.height);x.drawImage(qc,60+(500-qc.width*sc)/2,456+(176-qc.height*sc)/2,qc.width*sc,qc.height*sc);}catch(e){}}
   x.fillStyle='#3D5043';x.font='500 24px '+F;
   x.fillText((s.kota?s.kota+', ':'')+dmy(today()),640,500);
   x.fillText('Kepala Perpustakaan',640,534);
@@ -977,8 +981,8 @@ async function camToggle(){
   if(typeof Html5Qrcode==='undefined'){toast('Pemindai kamera gagal dimuat. Periksa koneksi internet.','err');return;}
   var el=$('#reader');el.hidden=false;
   try{
-    var h=new Html5Qrcode('reader',{formatsToSupport:[Html5QrcodeSupportedFormats.QR_CODE,Html5QrcodeSupportedFormats.CODE_128],verbose:false});
-    await h.start({facingMode:'environment'},{fps:10,qrbox:{width:260,height:150}},function(text){
+    var h=new Html5Qrcode('reader',{formatsToSupport:[Html5QrcodeSupportedFormats.CODE_128],useBarCodeDetector:true,verbose:false});
+    await h.start({facingMode:'environment'},{fps:15,aspectRatio:1.777,qrbox:function(w,h){return {width:Math.floor(w*.9),height:Math.floor(Math.min(h*.55,140))};},disableFlip:true,videoConstraints:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080},focusMode:'continuous'}},function(text){
       var now=Date.now();if(text===S.lastScan&&now-S.lastScanT<2500)return;
       S.lastScan=text;S.lastScanT=now;handleScan(text);
     },function(){});
@@ -996,7 +1000,7 @@ function scanResultHTML(){
     var al=S.pinjaman.filter(function(p){return p.anggotaId===a.id&&!p.tglKembali;});
     am='<p class="scan-name">'+esc(a.nama)+'</p><p class="sub">NISN <span class="mono">'+esc(a.nisn)+'</span> · '+esc(nm('kelas',a.kelasId))+'</p>'+
       (al.length?'<p class="sub" style="margin-top:10px">Sedang dipinjam ('+al.length+')</p><ul class="loanlist">'+al.map(function(p){return loanLi(p,true);}).join('')+'</ul>':'<p class="sub" style="margin-top:10px">Tidak ada buku yang sedang dipinjam.</p>');
-  }else am='<p class="sub">Pindai kartu anggota (QR berisi NISN) untuk memilih peminjam.</p>';
+  }else am='<p class="sub">Pindai kartu anggota (barcode berisi NISN) untuk memilih peminjam.</p>';
   if(b){
     bm='<p class="scan-name">'+esc(b.judul)+'</p><p class="sub"><span class="mono">'+esc(b.kode)+'</span> · '+esc(b.pengarang||'Pengarang tidak dicatat')+'</p><p style="margin-top:10px">'+(loan?'<span class="chip warn">Dipinjam</span>':'<span class="chip ok">Tersedia</span>')+'</p>'+
       (loan?'<ul class="loanlist">'+loanLi(loan,false,'Dipinjam oleh ')+'</ul>':'');
