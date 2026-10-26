@@ -427,6 +427,25 @@ tbody tr:hover td{box-shadow:0 8px 14px -10px rgba(10,30,18,.4)}
 .bcbox{background:#fff;border-radius:8px;line-height:0;width:min(100%,260px);padding:4px;box-shadow:0 8px 16px rgba(10,30,18,.25);transform:translateZ(24px);flex:none}.bcbox canvas{width:100%;height:auto;display:block}
 
 .bc.qr{padding:4px;line-height:0;border-radius:6px}.qrc{display:inline-block;width:64px;height:64px;line-height:0}.qrc img,.qrc canvas{width:64px!important;height:64px!important;display:block}
+
+#print-cards{display:none}
+@media print{
+  body.pc .app,body.pc #modal-root,body.pc #toast-root{display:none!important}
+  body.pc{background:#fff!important}
+  body.pc #print-cards{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:6mm;padding:0}
+  body.pc #print-cards .idcard{break-inside:avoid;max-width:none;box-shadow:none!important;border:1px solid #bbb}
+  body.pc #print-cards .idcard-h{padding:7px 10px;gap:8px}
+  body.pc #print-cards .idcard-h svg{width:30px;height:30px}
+  body.pc #print-cards .idcard-h small{font-size:7px}
+  body.pc #print-cards .idcard-h b{font-size:11px}
+  body.pc #print-cards .idcard-h span{font-size:6.5px}
+  body.pc #print-cards .idcard-b{padding:7px 10px 2px;font-size:8.5px;gap:1px 8px}
+  body.pc #print-cards .idcard-f{padding:5px 10px 8px;font-size:8px}
+  body.pc #print-cards .qrbox{width:72px;height:72px;padding:4px}
+  body.pc #print-cards .qrbox canvas,body.pc #print-cards .qrbox img{width:64px!important;height:64px!important}
+  body.pc #print-cards .sign b{margin-top:14px;font-size:8.5px}
+  @page{margin:10mm}
+}
 </style>
 </head>
 <body>
@@ -930,6 +949,24 @@ function openCard(id){
       makeQR($('#qr-box'),a.nisn,104);
     }});
 }
+function printCards(){
+  var q=S.q.anggota.toLowerCase(),fk=S.f.anggotaKelas;
+  var list=S.anggota.slice().sort(function(a,b){return nat(nm('kelas',a.kelasId),nm('kelas',b.kelasId))||nat(a.nama,b.nama);}).filter(function(a){
+    if(fk&&a.kelasId!==fk)return false;
+    if(q&&(a.nama+' '+a.nisn).toLowerCase().indexOf(q)<0)return false;return true;});
+  if(!list.length){toast('Tidak ada anggota untuk dicetak.','err');return;}
+  if(list.length>150&&!confirm('Akan mencetak '+list.length+' kartu (sekitar '+Math.ceil(list.length/8)+' halaman). Lanjutkan? Untuk mencetak per kelas, pilih kelas di filter lebih dulu.'))return;
+  var old=document.getElementById('print-cards');if(old)old.remove();
+  var box=document.createElement('div');box.id='print-cards';
+  box.innerHTML=list.map(function(a){return cardHTML(a).replace(' id="qr-box"','').replace(' data-tilt="9"','');}).join('');
+  document.body.appendChild(box);
+  var qs=box.querySelectorAll('.qrbox');
+  list.forEach(function(a,i){makeQR(qs[i],a.nisn,104);});
+  document.body.classList.add('pc');
+  var done=function(){document.body.classList.remove('pc');var b=document.getElementById('print-cards');if(b)b.remove();window.removeEventListener('afterprint',done);};
+  window.addEventListener('afterprint',done);
+  setTimeout(function(){window.print();},250);
+}
 function downloadCard(id){
   var a=byId('anggota',id),box=$('#qr-box');if(!a)return;
   var s=school(),W_=1080,H=680,c=document.createElement('canvas');c.width=W_;c.height=H;
@@ -1351,7 +1388,7 @@ function vAnggota(){
     return '<tr><td class="num">'+(i+1)+'</td><td class="mono">'+esc(a.nisn)+'</td><td class="t"><b>'+esc(a.nama)+'</b></td><td>'+esc(nm('kelas',a.kelasId))+'</td><td>'+esc(ttl||'–')+'</td><td>'+esc(a.jk||'–')+'</td><td>'+opsHTML('anggota',a.id,'<button class="ib wide" data-act="card" data-id="'+esc(a.id)+'" title="Lihat kartu anggota">'+icon('qr')+' Kartu</button>')+'</td></tr>';}).join('');
   var none=(S.q.anggota||fk)&&S.anggota.length?'<tr><td colspan="7"><div class="empty"><b>Tidak ada hasil</b>Ubah kata pencarian atau pilihan kelas.</div></td></tr>':emptyRow('Belum ada anggota','Klik Tambah untuk mendaftarkan siswa, atau impor seluruh siswa dari Excel. Setiap anggota mendapat kartu dengan kode QR dari NISN.',7);
   var ko=kelasOpts();
-  return head('Anggota','Siswa yang terdaftar sebagai anggota perpustakaan.',impBtn('anggota')+addBtn('anggota'))+
+  return head('Anggota','Siswa yang terdaftar sebagai anggota perpustakaan.',(CAN_PRINT?printBtn()+'<button class="btn ghost" data-act="print-cards">'+icon('qr')+' Cetak Kartu</button>':'')+impBtn('anggota')+addBtn('anggota'))+
   '<section class="panel"><div class="toolbar">'+searchBox('anggota','Cari nama atau NISN')+'<select id="f-anggotaKelas" aria-label="Filter kelas" style="width:auto;min-width:150px"><option value="">Semua kelas</option>'+ko.map(function(o){return '<option value="'+esc(o[0])+'"'+(fk===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select><span class="sub num">'+list.length+' dari '+S.anggota.length+' anggota</span></div><div class="tablewrap"><table><thead><tr><th>No</th><th>NISN</th><th>Nama</th><th>Kelas</th><th>Tempat, Tanggal Lahir</th><th>Jenis Kelamin</th><th class="r">Opsi</th></tr></thead><tbody>'+(rows||none)+'</tbody></table></div></section>';
 }
 function vRiwayat(){
@@ -1577,6 +1614,7 @@ document.addEventListener('click',function(e){
   if(act==='card'){openCard(el.dataset.id);return;}
   if(act==='dl-card'){downloadCard(el.dataset.id);return;}
   if(act==='print'){window.print();return;}
+  if(act==='print-cards'){printCards();return;}
   if(act==='csv'){exportCsv();return;}
   if(act==='xlsx'){exportXlsx();return;}
   if(act==='backup'){exportBackup();return;}
