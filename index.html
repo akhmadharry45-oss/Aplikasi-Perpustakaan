@@ -446,6 +446,22 @@ tbody tr:hover td{box-shadow:0 8px 14px -10px rgba(10,30,18,.4)}
   body.pc #print-cards .sign b{margin-top:14px;font-size:8.5px}
   @page{margin:10mm}
 }
+
+.rankgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.rank li{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:12px;align-items:center}
+.rk{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;background:var(--surface-2);color:var(--muted);box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 3px 6px rgba(10,30,18,.2)}
+.rank li:first-child .rk{background:linear-gradient(145deg,#F7C65A,#C98400);color:#2A1C00}
+.rk-tx{min-width:0;display:flex;flex-direction:column;gap:2px}
+.rk-tx b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk-tx small{color:var(--muted);font-size:12px}
+.rk-tx .tr{height:8px;border-radius:5px;background:var(--surface-2);overflow:hidden;margin-top:3px;box-shadow:inset 0 1px 2px rgba(10,30,18,.2)}
+.rk-tx .tr i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--primary),color-mix(in srgb,var(--primary) 70%,#fff))}
+.rk-p .tr i{background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 70%,#fff))}
+.rk-n{font-family:var(--font-display);font-size:22px;text-align:right}
+.rk-n small{font-family:var(--font-body);font-size:11px;color:var(--muted);font-weight:500}
+@media (max-width:900px){.rankgrid{grid-template-columns:minmax(0,1fr)}}
+@media print{.rankgrid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -1403,6 +1419,16 @@ function lapRows(){
   var d=S.lap.dari,s=S.lap.sampai;
   return S.pinjaman.filter(function(p){return (!d||p.tglPinjam>=d)&&(!s||p.tglPinjam<=s);}).sort(function(a,b){return nat(a.tglPinjam,b.tglPinjam);});
 }
+function topBorrowers(list,jk,n){
+  var m={};
+  list.forEach(function(p){var a=byId('anggota',p.anggotaId);if(!a||a.jk!==jk)return;var r=m[a.id]||(m[a.id]={a:a,n:0,last:''});r.n++;if(String(p.tglPinjam)>r.last)r.last=String(p.tglPinjam);});
+  return Object.keys(m).map(function(k){return m[k];}).sort(function(x,y){return y.n-x.n||nat(x.a.nama,y.a.nama);}).slice(0,n);
+}
+function rankPanel(title,jk,list,cls){
+  var top=topBorrowers(list,jk,5),max=top.length?top[0].n:1;
+  var body=top.length?'<ol class="rank">'+top.map(function(r,i){return '<li><span class="rk">'+(i+1)+'</span><div class="rk-tx"><b>'+esc(r.a.nama)+'</b><small>'+esc(nm('kelas',r.a.kelasId))+' · '+esc(r.a.nisn)+'</small><span class="tr"><i style="width:'+Math.round(r.n/max*100)+'%"></i></span></div><b class="num rk-n">'+r.n+'<small> buku</small></b></li>';}).join('')+'</ol>':'<p class="sub">Belum ada peminjaman oleh siswa '+esc(jk.toLowerCase())+' pada rentang ini.</p>';
+  return '<section class="panel rankp '+cls+'"><div class="panel-h"><h3>'+title+'</h3></div><div class="panel-b">'+body+'</div></section>';
+}
 function vLaporan(){
   var list=lapRows(),t=today();
   var kembali=list.filter(function(p){return p.tglKembali;}).length,aktif=list.length-kembali,late=list.filter(function(p){return !p.tglKembali&&p.tenggat<t;}).length;
@@ -1415,6 +1441,7 @@ function vLaporan(){
   return head('Laporan','Rekap peminjaman berdasarkan tanggal pinjam.',printBtn()+'<button class="btn ghost" data-act="csv"'+dis+'>'+icon('download')+' Unduh CSV</button><button class="btn primary" data-act="xlsx"'+dis+'>'+icon('download')+' Unduh Excel</button>')+
   '<section class="panel"><div class="toolbar" style="padding-bottom:16px"><div class="field" style="width:190px"><label for="lap-dari">Dari tanggal</label><input id="lap-dari" type="date" value="'+esc(S.lap.dari)+'"></div><div class="field" style="width:190px"><label for="lap-sampai">Sampai tanggal</label><input id="lap-sampai" type="date" value="'+esc(S.lap.sampai)+'"></div></div></section>'+
   '<div class="tiles">'+tiles.map(function(x){return '<article class="tile '+x[2]+'"><div><p class="tile-k">'+x[0]+'</p><p class="tile-v">'+x[1]+'</p></div></article>';}).join('')+'</div>'+
+  '<div class="rankgrid">'+rankPanel('Peminjam Terbanyak: Laki-Laki','Laki-Laki',list,'rk-l')+rankPanel('Peminjam Terbanyak: Perempuan','Perempuan',list,'rk-p')+'</div>'+
   '<div class="grid2"><section class="panel"><div class="panel-h"><h3>Rincian Peminjaman</h3></div><div class="tablewrap"><table><thead><tr><th>No</th><th>Dipinjam</th><th>Peminjam</th><th>Kelas</th><th>Judul</th><th>Tenggat</th><th>Kembali</th><th>Status</th></tr></thead><tbody>'+(rows||emptyRow('Tidak ada peminjaman','Tidak ada peminjaman pada rentang tanggal ini.',8))+'</tbody></table></div></section>'+
   '<section class="panel"><div class="panel-h"><h3>Peminjaman per Kelas</h3></div><div class="panel-b">'+(keys.length?'<ul class="bars">'+keys.map(function(k){return '<li><span>'+esc(k)+'</span><span class="tr"><i style="width:'+Math.round(perKelas[k]/max*100)+'%"></i></span><b class="num">'+perKelas[k]+'</b></li>';}).join('')+'</ul>':'<p class="sub">Belum ada data pada rentang ini.</p>')+'</div></section></div>';
 }
