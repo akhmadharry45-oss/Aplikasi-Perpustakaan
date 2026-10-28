@@ -747,7 +747,7 @@ var FORMS={
     prepare:async function(clean){var pin=clean.pin;delete clean.pin;if(pin){if(!/^\d{4,8}$/.test(pin))return 'PIN harus 4 sampai 8 angka.';clean.pinHash=await hashPin(pin);}return null;},
     check:function(d,id){var dup=S.admin.some(function(a){return a.id!==id&&String(a.username).toLowerCase()===d.username.toLowerCase();});return dup?'Nama pengguna '+d.username+' sudah dipakai.':null;}},
   buku:{title:'Buku',prefix:'b',
-    fields:[{k:'kode',l:'Kode buku',ph:'BK004',req:1,mono:1},{k:'judul',l:'Judul',req:1},{k:'pengarang',l:'Pengarang'},{k:'tahun',l:'Tahun terbit',type:'number',ph:'2024'},{k:'kelasId',l:'Kelas',type:'select',ph:'Pilih kelas',opts:kelasOpts},{k:'kategoriId',l:'Kategori',type:'select',ph:'Pilih kategori',opts:kategoriOpts}],
+    fields:[{k:'kode',l:'Kode buku',ph:'BK004',req:1,mono:1},{k:'noInv',l:'No. inventaris',ph:'001/INV/2026',mono:1},{k:'judul',l:'Judul',req:1},{k:'pengarang',l:'Pengarang'},{k:'tahun',l:'Tahun terbit',type:'number',ph:'2024'},{k:'kelasId',l:'Kelas',type:'select',ph:'Pilih kelas',opts:kelasOpts},{k:'kategoriId',l:'Kategori',type:'select',ph:'Pilih kategori',opts:kategoriOpts}],
     check:function(d,id){var dup=S.buku.some(function(b){return b.id!==id&&String(b.kode).toLowerCase()===d.kode.toLowerCase();});return dup?'Kode buku '+d.kode+' sudah dipakai buku lain.':null;}},
   anggota:{title:'Anggota',prefix:'m',
     fields:[{k:'nisn',l:'NISN',req:1,mono:1,ph:'12345'},{k:'nama',l:'Nama',req:1},{k:'kelasId',l:'Kelas',type:'select',ph:'Pilih kelas',opts:kelasOpts},{k:'jk',l:'Jenis kelamin',type:'select',req:1,ph:'Pilih',opts:[['Laki-Laki','Laki-Laki'],['Perempuan','Perempuan']]},{k:'tempatLahir',l:'Tempat lahir'},{k:'tglLahir',l:'Tanggal lahir',type:'date'}],
@@ -1057,7 +1057,7 @@ function scanResultHTML(){
       (al.length?'<p class="sub" style="margin-top:10px">Sedang dipinjam ('+al.length+')</p><ul class="loanlist">'+al.map(function(p){return loanLi(p,true);}).join('')+'</ul>':'<p class="sub" style="margin-top:10px">Tidak ada buku yang sedang dipinjam.</p>');
   }else am='<p class="sub">Pindai kartu anggota (QR berisi NISN) untuk memilih peminjam.</p>';
   if(b){
-    bm='<p class="scan-name">'+esc(b.judul)+'</p><p class="sub"><span class="mono">'+esc(b.kode)+'</span> · '+esc(b.pengarang||'Pengarang tidak dicatat')+'</p><p style="margin-top:10px">'+(loan?'<span class="chip warn">Dipinjam</span>':'<span class="chip ok">Tersedia</span>')+'</p>'+
+    bm='<p class="scan-name">'+esc(b.judul)+'</p><p class="sub"><span class="mono">'+esc(b.kode)+'</span>'+(b.noInv?' · Inv. '+esc(b.noInv):'')+' · '+esc(b.pengarang||'Pengarang tidak dicatat')+'</p><p style="margin-top:10px">'+(loan?'<span class="chip warn">Dipinjam</span>':'<span class="chip ok">Tersedia</span>')+'</p>'+
       (loan?'<ul class="loanlist">'+loanLi(loan,false,'Dipinjam oleh ')+'</ul>':'');
   }else bm='<p class="sub">Pindai barcode buku. Buku yang sedang dipinjam bisa langsung dikembalikan dari sini.</p>';
   var act='';
@@ -1135,8 +1135,8 @@ function refName(ctx,kind,name,refs){
 }
 var SPEC={
   buku:{label:'Buku',hint:'Satu baris satu eksemplar buku. Kelas dan kategori yang belum ada dibuat otomatis.',
-    cols:[{k:'kode',t:'Kode',h:['kode','kodebuku','nobuku','nomorbuku'],req:1},{k:'judul',t:'Judul',h:['judul','judulbuku'],req:1},{k:'pengarang',t:'Pengarang',h:['pengarang','penulis']},{k:'tahun',t:'Tahun',h:['tahun','tahunterbit']},{k:'kelas',t:'Kelas',h:['kelas','namakelas']},{k:'kategori',t:'Kategori',h:['kategori','jenisbuku']}],
-    sample:[['BK101','Matematika Gembira','Siti Rahma','2024','Kelas 3','Buku Pelajaran']],
+    cols:[{k:'kode',t:'Kode',h:['kode','kodebuku','nobuku','nomorbuku'],req:1},{k:'noInv',t:'No Inventaris',h:['noinventaris','nomorinventaris','inventaris','noinv','noinduk','nomorinduk']},{k:'judul',t:'Judul',h:['judul','judulbuku'],req:1},{k:'pengarang',t:'Pengarang',h:['pengarang','penulis']},{k:'tahun',t:'Tahun',h:['tahun','tahunterbit']},{k:'kelas',t:'Kelas',h:['kelas','namakelas']},{k:'kategori',t:'Kategori',h:['kategori','jenisbuku']}],
+    sample:[['BK101','001/INV/2026','Matematika Gembira','Siti Rahma','2024','Kelas 3','Buku Pelajaran']],
     make:function(r,ctx,it){
       if(!r.kode)throw new Error('Kode buku kosong');
       if(!r.judul)throw new Error('Judul kosong');
@@ -1146,9 +1146,9 @@ var SPEC={
       ctx.seen[key]=1;
       var refs=[],kelasId=refName(ctx,'kelas',r.kelas,refs),katId=refName(ctx,'kategori',r.kategori,refs);
       var ex=ctx.buku[key]&&byId('buku',ctx.buku[key]);
-      var d=ex?strip(ex):{kode:r.kode,judul:r.judul,pengarang:'',tahun:null,kelasId:'',kategoriId:''};
+      var d=ex?strip(ex):{kode:r.kode,noInv:'',judul:r.judul,pengarang:'',tahun:null,kelasId:'',kategoriId:''};
       d.kode=r.kode;d.judul=r.judul;
-      if(r.pengarang)d.pengarang=r.pengarang;if(tahun!==null)d.tahun=tahun;if(kelasId)d.kelasId=kelasId;if(katId)d.kategoriId=katId;
+      if(r.noInv)d.noInv=r.noInv;if(r.pengarang)d.pengarang=r.pengarang;if(tahun!==null)d.tahun=tahun;if(kelasId)d.kelasId=kelasId;if(katId)d.kategoriId=katId;
       it.status=ex?'ada':'baru';it.id=ex?ex.id:uid('b');it.data=d;it.refs=refs;it.c='buku';it.label=r.kode+' · '+r.judul;
     }},
   anggota:{label:'Anggota',hint:'Satu baris satu siswa. Jenis kelamin diisi L atau P. Tanggal lahir contoh 25-03-2015. Kelas yang belum ada dibuat otomatis.',
@@ -1358,13 +1358,13 @@ function vKategori(){
 }
 function vBuku(){
   var q=S.q.buku.toLowerCase(),list=S.buku.slice().sort(function(a,b){return nat(a.kode,b.kode);});
-  if(q)list=list.filter(function(b){return [b.kode,b.judul,b.pengarang].join(' ').toLowerCase().indexOf(q)>=0;});
+  if(q)list=list.filter(function(b){return [b.kode,b.noInv,b.judul,b.pengarang].join(' ').toLowerCase().indexOf(q)>=0;});
   var rows=list.map(function(b,i){
     var out=!!activeLoan(b.id);
-    return '<tr><td class="num">'+(i+1)+'</td><td>'+esc(nm('kelas',b.kelasId))+'</td><td>'+esc(nm('kategori',b.kategoriId))+'</td><td class="mono">'+esc(b.kode)+'</td><td class="t"><b>'+esc(b.judul)+'</b></td><td>'+esc(b.pengarang||'–')+'</td><td class="num">'+esc(b.tahun||'–')+'</td><td>'+(out?'<span class="chip warn">Dipinjam</span>':'<span class="chip ok">Tersedia</span>')+'</td><td><span class="bc qr"><span class="qrc" data-qr="'+esc(b.kode)+'" role="img" aria-label="Kode QR '+esc(b.kode)+'"></span></span></td><td>'+opsHTML('buku',b.id)+'</td></tr>';}).join('');
-  var none=S.q.buku?'<tr><td colspan="10"><div class="empty"><b>Tidak ada hasil</b>Tidak ada buku yang cocok dengan pencarian.</div></td></tr>':emptyRow('Belum ada buku','Klik Tambah untuk mencatat buku pertama, atau impor banyak buku dari Excel. Barcode dibuat otomatis dari kode buku.',10);
+    return '<tr><td class="num">'+(i+1)+'</td><td>'+esc(nm('kelas',b.kelasId))+'</td><td>'+esc(nm('kategori',b.kategoriId))+'</td><td class="mono">'+esc(b.kode)+'</td><td class="mono">'+esc(b.noInv||'–')+'</td><td class="t"><b>'+esc(b.judul)+'</b></td><td>'+esc(b.pengarang||'–')+'</td><td class="num">'+esc(b.tahun||'–')+'</td><td>'+(out?'<span class="chip warn">Dipinjam</span>':'<span class="chip ok">Tersedia</span>')+'</td><td><span class="bc qr"><span class="qrc" data-qr="'+esc(b.kode)+'" role="img" aria-label="Kode QR '+esc(b.kode)+'"></span></span></td><td>'+opsHTML('buku',b.id)+'</td></tr>';}).join('');
+  var none=S.q.buku?'<tr><td colspan="11"><div class="empty"><b>Tidak ada hasil</b>Tidak ada buku yang cocok dengan pencarian.</div></td></tr>':emptyRow('Belum ada buku','Klik Tambah untuk mencatat buku pertama, atau impor banyak buku dari Excel. Barcode dibuat otomatis dari kode buku.',11);
   return head('Data Buku','Koleksi buku beserta status dan barcode. Satu baris mewakili satu eksemplar.',printBtn()+impBtn('buku')+addBtn('buku'))+
-  '<section class="panel"><div class="toolbar">'+searchBox('buku','Cari kode, judul, atau pengarang')+'<span class="sub num">'+list.length+' dari '+S.buku.length+' buku</span></div><div class="tablewrap"><table><thead><tr><th>No</th><th>Kelas</th><th>Kategori</th><th>Kode</th><th>Judul</th><th>Pengarang</th><th>Tahun</th><th>Status</th><th>Barcode</th><th class="r">Opsi</th></tr></thead><tbody>'+(rows||none)+'</tbody></table></div></section>';
+  '<section class="panel"><div class="toolbar">'+searchBox('buku','Cari kode, no. inventaris, judul, atau pengarang')+'<span class="sub num">'+list.length+' dari '+S.buku.length+' buku</span></div><div class="tablewrap"><table><thead><tr><th>No</th><th>Kelas</th><th>Kategori</th><th>Kode</th><th>No. Inventaris</th><th>Judul</th><th>Pengarang</th><th>Tahun</th><th>Status</th><th>Barcode</th><th class="r">Opsi</th></tr></thead><tbody>'+(rows||none)+'</tbody></table></div></section>';
 }
 function vPinjaman(){
   var q=S.q.pinjaman.toLowerCase(),f=S.f.pinjaman;
