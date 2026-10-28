@@ -1,0 +1,32 @@
+{
+  "name": "Pustaka - Perpustakaan SD Negeri 1 Barabai Timur",
+  "short_name": "Pustaka",
+  "description": "Aplikasi perpustakaan SD Negeri 1 Barabai Timur",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "id",
+  "background_color": "#12361F",
+  "theme_color": "#12361F",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
