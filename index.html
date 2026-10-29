@@ -469,6 +469,11 @@ tbody tr:hover td{box-shadow:0 8px 14px -10px rgba(10,30,18,.4)}
 .rk-n small{font-family:var(--font-body);font-size:11px;color:var(--muted);font-weight:500}
 @media (max-width:900px){.rankgrid{grid-template-columns:minmax(0,1fr)}}
 @media print{.rankgrid{grid-template-columns:repeat(2,1fr)}}
+
+.diag{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.diag li{display:flex;gap:10px;align-items:flex-start}
+.diag small{display:block;color:var(--muted);font-size:12px}
+.diag .ok b{color:var(--primary)}.diag .no b{color:var(--danger)}
 </style>
 </head>
 <body>
@@ -1482,7 +1487,23 @@ function canInstall(){return !IN_CLAUDE&&!isStandalone()&&/^https?:/.test(locati
 function installApp(){
   if(INSTALL_EVT){var e=INSTALL_EVT;INSTALL_EVT=null;e.prompt();e.userChoice.then(function(){renderChrome();});return;}
   var ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
-  toast(ios?'Di Safari: ketuk tombol Bagikan, lalu Tambah ke Layar Utama.':'Buka menu titik tiga di Chrome, lalu pilih Pasang aplikasi. Jika hanya ada Tambahkan ke layar utama, pastikan file manifest.json dan folder icons sudah ikut diunggah ke GitHub.');
+  if(ios){toast('Di Safari: ketuk tombol Bagikan, lalu Tambah ke Layar Utama.');return;}
+  pwaDiag();
+}
+async function pwaDiag(){
+  var items=[];
+  function add(ok,t,fix){items.push('<li class="'+(ok?'ok':'no')+'"><b>'+(ok?'✓':'✗')+'</b> <span>'+esc(t)+(ok||!fix?'':'<small>'+esc(fix)+'</small>')+'</span></li>');}
+  add(location.protocol==='https:'||location.hostname==='localhost','Alamat memakai https','Buka lewat alamat https://… dari GitHub Pages.');
+  var files=['manifest.json','sw.js','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png'];
+  for(var i=0;i<files.length;i++){
+    var ok=false,st='';
+    try{var r=await fetch(new URL(files[i],location.href).href,{cache:'no-store'});ok=r.ok;st=r.status;}catch(e){st='gagal';}
+    add(ok,files[i]+' ditemukan'+(ok?'':' (kode '+st+')'),'Unggah file ini ke GitHub, satu folder dengan index.html'+(files[i].indexOf('icons/')===0?' (di dalam folder icons)':'')+'.');
+  }
+  var sw=false;try{var reg=await navigator.serviceWorker.getRegistration();sw=!!(reg&&(reg.active||reg.installing||reg.waiting));}catch(e){}
+  add(sw,'Service worker aktif','Muat ulang halaman, tunggu 10 detik. Jika tetap ✗, salah satu file di atas belum terunggah.');
+  var allOk=items.every(function(x){return x.indexOf('class="ok"')>=0;});
+  openModal({title:'Pemeriksaan pemasangan',body:'<ul class="diag">'+items.join('')+'</ul><p class="sub" style="margin-top:12px">'+(allOk?'Semua syarat terpenuhi. Buka menu titik tiga di Chrome lalu pilih Pasang aplikasi. Jika belum ada, tutup Chrome sepenuhnya, buka lagi, tunggu beberapa detik, lalu ketuk Pasang di HP sekali lagi.':'Perbaiki yang bertanda ✗, lalu muat ulang halaman dan coba lagi.')+'</p>',footer:'<button type="button" class="btn primary" data-act="close-modal">Tutup</button>'});
 }
 function pwaInit(){
   if(IN_CLAUDE||!/^https?:/.test(location.protocol))return;
