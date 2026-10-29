@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="Pustaka">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Perpustakaan SD Negeri 1 Barabai Timur</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1494,11 +1494,11 @@ async function pwaDiag(){
   var items=[];
   function add(ok,t,fix){items.push('<li class="'+(ok?'ok':'no')+'"><b>'+(ok?'✓':'✗')+'</b> <span>'+esc(t)+(ok||!fix?'':'<small>'+esc(fix)+'</small>')+'</span></li>');}
   add(location.protocol==='https:'||location.hostname==='localhost','Alamat memakai https','Buka lewat alamat https://… dari GitHub Pages.');
-  var files=['manifest.json','sw.js','icons/icon-192.png','icons/icon-512.png','icons/maskable-512.png'];
+  var files=['manifest.json','sw.js','icon-192.png','icon-512.png','maskable-512.png'];
   for(var i=0;i<files.length;i++){
     var ok=false,st='';
     try{var r=await fetch(new URL(files[i],location.href).href,{cache:'no-store'});ok=r.ok;st=r.status;}catch(e){st='gagal';}
-    add(ok,files[i]+' ditemukan'+(ok?'':' (kode '+st+')'),'Unggah file ini ke GitHub, satu folder dengan index.html'+(files[i].indexOf('icons/')===0?' (di dalam folder icons)':'')+'.');
+    add(ok,files[i]+' ditemukan'+(ok?'':' (kode '+st+')'),'Unggah file ini ke GitHub, satu folder dengan index.html'+'.');
   }
   var sw=false;try{var reg=await navigator.serviceWorker.getRegistration();sw=!!(reg&&(reg.active||reg.installing||reg.waiting));}catch(e){}
   add(sw,'Service worker aktif','Muat ulang halaman, tunggu 10 detik. Jika tetap ✗, salah satu file di atas belum terunggah.');
