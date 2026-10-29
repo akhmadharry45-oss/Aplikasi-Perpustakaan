@@ -486,6 +486,8 @@ tbody tr:hover td{box-shadow:0 8px 14px -10px rgba(10,30,18,.4)}
 .login-head{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .login-logo{width:64px;height:64px;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(10,30,18,.3))}
 @media print{body.pc #print-cards .idcard-h img.idcard-logo{width:30px;height:30px}}
+
+.foot .credit{margin-left:auto}
 </style>
 </head>
 <body>
@@ -522,7 +524,7 @@ tbody tr:hover td{box-shadow:0 8px 14px -10px rgba(10,30,18,.4)}
   <aside class="side" id="side" aria-label="Menu utama">
     <div class="brand">
       <div class="brand-mark"><svg class="i"><use href="#i-book"/></svg></div>
-      <div><b>PUSTAKA</b><small>SD Negeri 1 Barabai Timur</small></div>
+      <div><b>PUSTAKA</b><small></small></div>
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="side-foot" id="side-foot"></div>
@@ -530,7 +532,7 @@ tbody tr:hover td{box-shadow:0 8px 14px -10px rgba(10,30,18,.4)}
   <div class="main">
     <header class="top"><div class="top-in" id="top"></div></header>
     <main class="content" id="view"></main>
-    <footer class="foot"><span>Aplikasi Perpustakaan SD Negeri 1 Barabai Timur</span><span class="credit">Design by Akhmad Fitra Harry, S.Pd</span></footer>
+    <footer class="foot"><span class="credit">Design by Akhmad Fitra Harry, S.Pd</span></footer>
   </div>
 </div>
 <div id="modal-root"></div>
@@ -1383,6 +1385,7 @@ function vDashboard(){
   var notes='';
   if(S.dbErr==='permission_denied')notes+='<div class="notice">Firebase menolak akses ke data. Buka Firebase Console, menu Firestore Database, tab Rules, lalu pasang aturan dari panduan agar petugas yang sudah masuk boleh membaca dan menulis.</div>';
   if(IN_CLAUDE&&!S.db)notes+='<div class="notice">Penyimpanan online tidak tersedia di tampilan ini, jadi data hanya tersimpan di peramban. Masuk ke claude.ai lalu buka halaman ini lagi agar data tersimpan online.</div>';
+  if(!S.setting&&SCHOOL_DEFAULT.nama==='Nama Sekolah Anda')notes+='<div class="notice"><b>Atur identitas sekolah.</b> Isi nama sekolah, alamat, dan logo agar tampil di kartu anggota. <button class="btn ghost sm" data-act="school">'+icon('edit')+' Atur sekarang</button></div>';
   if(!S.buku.length&&!S.anggota.length)notes+='<div class="notice"><b>Mulai dari sini.</b> Tambahkan data lewat menu di kiri, atau impor sekaligus dari Excel. <button class="btn ghost sm" data-act="imp-open" data-v="buku">'+icon('upload')+' Impor dari Excel</button><button class="btn ghost sm" data-act="demo">Muat data contoh</button></div>';
   else if(!S.db&&(!S.lastBackup||(Date.now()-new Date(S.lastBackup).getTime())>14*864e5))notes+='<div class="notice">Data hanya tersimpan di peramban ini, dan '+(S.lastBackup?'cadangan terakhir '+esc(fmtDT(S.lastBackup)):'belum pernah dicadangkan')+'. <button class="btn ghost sm" data-act="backup">'+icon('download')+' Unduh cadangan</button></div>';
   if(!S.db&&!S.storeOk)notes+='<div class="notice">Peramban menolak penyimpanan data. Perubahan akan hilang saat halaman ditutup. Unduh cadangan secara berkala.</div>';
